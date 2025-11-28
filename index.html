@@ -34,13 +34,59 @@ body {
   font-size:2.3vw; color:#f1defb; margin-bottom:4vw; font-family:'Orbitron', Arial, sans-serif; letter-spacing:0.04em;
   user-select:none; text-align:center;
 }
+.level-buttons {
+  display: flex; gap: 2vw; flex-wrap: wrap; justify-content: center;
+}
 #startScreen button {
   padding:19px 64px; font-size:2vw; border-radius:34px; border:none;
-  background:linear-gradient(90deg,#b621fe 0%,#1fd1f9 100%);
   color:#fff; font-family:'Orbitron',Arial,sans-serif; font-weight:700;
   cursor:pointer; box-shadow:0 4px 22px rgba(46,37,94,0.23); transition: box-shadow 0.15s, background 0.15s;
+  min-width: 180px;
 }
-#startScreen button:hover { background:linear-gradient(90deg,#4a00e0 0%,#8e2de2 100%);}
+#jmikeBtn {
+  background:linear-gradient(90deg,#b621fe 0%,#1fd1f9 100%);
+}
+#denBtn {
+  background:linear-gradient(90deg,#ff6b6b 0%,#ffa500 100%);
+}
+#tuongBtn {
+  background:linear-gradient(90deg,#00c6ff 0%,#0072ff 100%);
+}
+#pixBtn {
+  background:linear-gradient(90deg,#4ecdc4 0%,#44a08d 100%);
+}
+#startScreen button:hover {
+  box-shadow:0 6px 30px rgba(46,37,94,0.4);
+}
+#jmikeBtn:hover { background:linear-gradient(90deg,#4a00e0 0%,#8e2de2 100%);}
+#denBtn:hover { background:linear-gradient(90deg,#ff5252 0%,#ff9800 100%);}
+#tuongBtn:hover { background:linear-gradient(90deg,#005bb5 0%,#003f7f 100%);}
+#pixBtn:hover { background:linear-gradient(90deg,#26a69a 0%,#00796b 100%);}
+.level-info {
+  color:#d4b8ff; font-size:1.4vw; margin-top:2vw; max-width:90vw;
+  font-family:'Orbitron',Arial,sans-serif; letter-spacing:0.02em;
+  text-align:center; line-height:1.5; text-shadow:0 1px 8px #3c006688;
+}
+.level-info strong { color:#fff; }
+#backToMenu {
+  position:absolute; bottom:3vh; left:50%; transform:translateX(-50%);
+  padding:12px 32px; font-size:1.6vw; border-radius:24px; border:2px solid #b621fe;
+  background:rgba(182,33,254,0.15); color:#fff; font-family:'Orbitron',Arial,sans-serif;
+  font-weight:600; cursor:pointer; transition:all 0.2s;
+  box-shadow:0 2px 12px rgba(182,33,254,0.3);
+}
+#backToMenu:hover {
+  background:linear-gradient(90deg,#b621fe 0%,#1fd1f9 100%);
+  box-shadow:0 4px 20px rgba(182,33,254,0.5); transform:translateX(-50%) translateY(-2px);
+}
+@media (max-width:600px) {
+  #levelInfo { font-size:18px;}
+  .card { width:24vw; height:24vw; min-width:62px; min-height:62px;}
+  .level-buttons { flex-direction: column; gap: 1.5vh; }
+  #startScreen button { font-size: 5.5vw; padding: 4vw 8vw; min-width: 70vw; }
+  .level-info { font-size:3.5vw; margin-top:3vh; padding:0 5vw; }
+  #backToMenu { font-size:4vw; padding:3vw 6vw; bottom:2vh; }
+}
 #overlay {
   position:fixed; top:0; left:0; width:100vw; height:100vh;
   background:rgba(24,10,44,0.82); color:#fff; font-size:2.6vw;
@@ -83,25 +129,33 @@ body {
 .card img {
   width:82%; height:82%; object-fit:contain; pointer-events:none; user-select:none;
 }
-@media (max-width:600px) {
-  #levelInfo { font-size:18px;}
-  .card { width:24vw; height:24vw; min-width:62px; min-height:62px;}
-}
 </style>
 </head>
 <body>
 <div id="startScreen">
   <h1>(RE)FIND PAIR</h1>
-  <p>Try to find all pairs.</p>
-  <button id="startBtn">(re)start</button>
+  <p>Choose your level and find all pairs!</p>
+  <div class="level-buttons">
+    <button id="jmikeBtn">j.mike level</button>
+    <button id="denBtn">den level</button>
+    <button id="tuongBtn">tuong level</button>
+    <button id="pixBtn">pix level</button>
+  </div>
+  <div class="level-info">
+    <strong>j.mike level:</strong> 4 levels (4, 5, 5, 7 pairs)<br>
+    <strong>den level:</strong> 4 levels (4, 5, 5, 7 pairs)<br>
+    <strong>tuong level:</strong> 4 levels (4, 5, 5, 7 pairs)<br>
+    <strong>pix level:</strong> 14 levels (7x13, 9 pairs)
+  </div>
 </div>
 <div id="overlay"></div>
 <div id="gameRoot" style="display:none;">
   <div id="levelInfo"></div>
   <div id="pairsGrid"></div>
+  <button id="backToMenu">Back to Menu</button>
 </div>
 <script>
-const FLYWORD = '(re)dacted';
+const FLYWORD = 'memory';
 const FLY_COUNT = 26, MIN_DUR = 8, MAX_DUR = 22;
 function makeFlyText() {
   const el = document.createElement('div');
@@ -125,33 +179,68 @@ function makeFlyText() {
 for(let i=0;i<FLY_COUNT;i++) makeFlyText();
 
 const startScreen = document.getElementById('startScreen');
-const startBtn = document.getElementById('startBtn');
+const jmikeBtn = document.getElementById('jmikeBtn');
+const denBtn = document.getElementById('denBtn');
+const tuongBtn = document.getElementById('tuongBtn');
+const pixBtn = document.getElementById('pixBtn');
 const overlay = document.getElementById('overlay');
 const levelInfo = document.getElementById('levelInfo');
 const pairsGrid = document.getElementById('pairsGrid');
 const gameRoot = document.getElementById('gameRoot');
+const backToMenu = document.getElementById('backToMenu');
 
-// --- загрузка всех используемых картинок ---
-const ALL_IMAGE_SOURCES = [
-  // Main game images (1–17.png)
-  ...Array.from({length:17},(_,i)=>`${i+1}.png`),
-  // Level 0 images for pairs (20–23.png)
-  "20.png","21.png","22.png","23.png"
-];
-const cardImgs = [];
-ALL_IMAGE_SOURCES.forEach(src => {
-  let img = new Image(); img.src = src; cardImgs.push(img);
-});
+const JMIKE_IMAGES = Array.from({length:23},(_,i)=>`${i+1}.png`);
+const jMikeImgs = JMIKE_IMAGES.map(src => { let img = new Image(); img.src = src; return img; });
 
-// --- Levels array, Level 0 first! ---
-const LEVELS = [
-  // Level 0: uses separate images
-  { nPairs:4, imgFrom:17, imgTo:20 }, // в cardImgs индексы 17–20 = 20,21,22,23.png
-  { nPairs:5, imgFrom:0, imgTo:4 },   // 1–5.png
-  { nPairs:5, imgFrom:5, imgTo:9 },   // 6–10.png
-  { nPairs:7, imgFrom:10, imgTo:16 }  // 11–17.png
+const DEN_IMAGES = Array.from({length:21},(_,i)=>`den${i+1}.png`);
+const denImgs = DEN_IMAGES.map(src => { let img = new Image(); img.src = src; return img; });
+
+const TUONG_IMAGES = Array.from({length:23},(_,i)=>`tuong${i+1}.png`);
+const tuongImgs = TUONG_IMAGES.map(src => { let img = new Image(); img.src = src; return img; });
+
+
+const PIX_IMAGES = Array.from({length:99},(_,i)=>`pix${i+1}.png`);
+const pixImgs = PIX_IMAGES.map(src => { let img = new Image(); img.src = src; return img; });
+
+const JMIKE_LEVELS = [
+  { nPairs:4, imgFrom:19, imgTo:22 },
+  { nPairs:5, imgFrom:0, imgTo:4 },   
+  { nPairs:5, imgFrom:5, imgTo:9 },   
+  { nPairs:7, imgFrom:10, imgTo:20 }
 ];
-let cards = [], opened = [], matched = [], level = 0;
+
+const DEN_LEVELS = [
+  { nPairs:4, imgFrom:0, imgTo:3 },
+  { nPairs:5, imgFrom:4, imgTo:8 },
+  { nPairs:5, imgFrom:9, imgTo:13 },
+  { nPairs:7, imgFrom:14, imgTo:20 }
+];
+
+const TUONG_LEVELS = [
+  { nPairs:4, imgFrom:19, imgTo:22 },
+  { nPairs:5, imgFrom:0, imgTo:4 },
+  { nPairs:5, imgFrom:5, imgTo:9 },
+  { nPairs:7, imgFrom:10, imgTo:20 }
+];
+
+const PIX_LEVELS = [
+  { nPairs:7, imgFrom:0, imgTo:6 },
+  { nPairs:7, imgFrom:7, imgTo:13 },
+  { nPairs:7, imgFrom:14, imgTo:20 },
+  { nPairs:7, imgFrom:21, imgTo:27 },
+  { nPairs:7, imgFrom:28, imgTo:34 },
+  { nPairs:7, imgFrom:35, imgTo:41 },
+  { nPairs:7, imgFrom:42, imgTo:48 },
+  { nPairs:7, imgFrom:49, imgTo:55 },
+  { nPairs:7, imgFrom:56, imgTo:62 },
+  { nPairs:7, imgFrom:63, imgTo:69 },
+  { nPairs:7, imgFrom:70, imgTo:76 },
+  { nPairs:7, imgFrom:77, imgTo:83 },
+  { nPairs:7, imgFrom:84, imgTo:90 },
+  { nPairs:9, imgFrom:91, imgTo:98 }
+];
+
+let cards = [], opened = [], matched = [], level = 0, currentGameType = null, currentImages = [], currentLevels = [];
 
 function showOverlay(text, btn, isShare) {
   const btnHtml = btn ? `<button class="big-button">${btn}</button>` : '';
@@ -163,7 +252,7 @@ function showOverlay(text, btn, isShare) {
       const shareBtn = overlay.querySelector('.big-button');
       if (shareBtn) {
         shareBtn.onclick = function() {
-          const tweet = encodeURIComponent("Congratulations, you've found all the pairs in the \"(re)find pair\" game.\n\nTry to find them all: re-find-pair.vercel.app");
+          const tweet = encodeURIComponent(`Completed ${currentGameType} level in Memory Game!`);
           window.open("https://twitter.com/intent/tweet?text=" + tweet, "_blank");
         };
       }
@@ -171,21 +260,42 @@ function showOverlay(text, btn, isShare) {
   }
 }
 
-function hideOverlay() { overlay.classList.remove('visible'); overlay.innerHTML=''; }
+function hideOverlay() { 
+  overlay.classList.remove('visible'); 
+  overlay.innerHTML=''; 
+}
 
-function setupLevel(lvlIdx){
+function showStartScreen() {
+  gameRoot.style.display = 'none';
+  pairsGrid.innerHTML = '';
+  startScreen.style.display = 'flex';
+  hideOverlay();
+}
+
+function setupLevel(lvlIdx, gameType, images, levels) {
   opened = []; matched = [];
   pairsGrid.innerHTML = '';
-  levelInfo.textContent = `Level ${lvlIdx}`;
+  levelInfo.textContent = `${gameType} Level ${lvlIdx}`;
   level = lvlIdx;
+  currentGameType = gameType;
+  currentImages = images;
+  currentLevels = levels;
+  
+  const levelData = levels[lvlIdx];
   const imgIndexes = [];
-  for(let i=LEVELS[lvlIdx].imgFrom; i<=LEVELS[lvlIdx].imgTo; i++) imgIndexes.push(i);
+  for(let i=levelData.imgFrom; i<=levelData.imgTo; i++) imgIndexes.push(i);
+  
   let pairsArr = [...imgIndexes, ...imgIndexes];
-  for(let i=pairsArr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); [pairsArr[i],pairsArr[j]]=[pairsArr[j],pairsArr[i]];}
+  for(let i=pairsArr.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1)); 
+    [pairsArr[i],pairsArr[j]]=[pairsArr[j],pairsArr[i]];
+  }
+  
   cards = pairsArr.map((idx,i)=>({id:i,imgIdx:idx,open:false,matched:false,element:null}));
-  let cols = Math.min(6,Math.ceil(cards.length/2)), rows = Math.ceil(cards.length/cols);
+  let cols = Math.min(8,Math.ceil(cards.length/2)), rows = Math.ceil(cards.length/cols);
   pairsGrid.style.gridTemplateColumns = `repeat(${cols},1fr)`;
   pairsGrid.style.gridTemplateRows = `repeat(${rows},1fr)`;
+  
   cards.forEach((card,ci)=>{
     let cardDiv=document.createElement('div');
     cardDiv.className = "card";
@@ -197,22 +307,26 @@ function setupLevel(lvlIdx){
   });
   gameRoot.style.display = 'flex';
 }
+
 function renderCard(ci){
   let card = cards[ci], el = card.element;
   el.classList.remove('open'); el.classList.remove('matched');
   if(card.matched) el.classList.add('matched');
   else if(card.open) el.classList.add('open');
   else el.innerHTML='';
+  
   if(card.open||card.matched){
-    let img = cardImgs[card.imgIdx];
-    if(img.complete){el.innerHTML='';el.appendChild(img.cloneNode());}
+    let img = currentImages[card.imgIdx];
+    if(img.complete && img.naturalWidth > 0){el.innerHTML='';el.appendChild(img.cloneNode());}
     else{el.textContent="?";}
   }
 }
+
 function openCard(idx){
   let card = cards[idx];
   if(card.open || card.matched || opened.length >= 2) return;
   card.open = true; renderCard(idx); opened.push(idx);
+  
   if(opened.length === 2){
     let a = cards[opened[0]], b = cards[opened[1]];
     if(a.imgIdx === b.imgIdx){
@@ -229,29 +343,52 @@ function openCard(idx){
     }
   }
 }
+
 function checkWinLevel(){
   if(cards.every(card=>card.matched)){
-    if(level<LEVELS.length-1)
-      showOverlay(`Level ${level} complete!`,'Next Level');
-    else {
-      showOverlay('Congratulations! All levels complete!','Sha(re)',true);
+    if(level < currentLevels.length-1) {
+      showOverlay(`Level ${level} complete!`, 'Next Level');
+    } else {
+      showOverlay('Congratulations! All levels complete!', 'Share', true);
     }
   }
 }
 
-startBtn.onclick = function() {
-  startScreen.style.display='none';
-  setupLevel(0);
+backToMenu.onclick = showStartScreen;
+
+jmikeBtn.onclick = function() {
+  startScreen.style.display = 'none';
+  setupLevel(0, 'j.mike', jMikeImgs, JMIKE_LEVELS);
 };
+
+denBtn.onclick = function() {
+  startScreen.style.display = 'none';
+  setupLevel(0, 'den', denImgs, DEN_LEVELS);
+};
+
+tuongBtn.onclick = function() {
+  startScreen.style.display = 'none';
+  setupLevel(0, 'tuong', tuongImgs, TUONG_LEVELS);
+};
+
+pixBtn.onclick = function() {
+  startScreen.style.display = 'none';
+  setupLevel(0, 'pix', pixImgs, PIX_LEVELS);
+};
+
 overlay.onclick = e => {
-  if(e.target.tagName === 'BUTTON' && e.target.classList.contains('big-button')
-     && e.target.textContent === 'Next Level'){
-    hideOverlay();
-    if(level < LEVELS.length-1){
-      setupLevel(level+1);
+  if(e.target.tagName === 'BUTTON' && e.target.classList.contains('big-button')) {
+    if(e.target.textContent === 'Next Level') {
+      hideOverlay();
+      if(level < currentLevels.length-1) {
+        setupLevel(level+1, currentGameType, currentImages, currentLevels);
+      }
+    } else if(e.target.textContent === 'Share') {
+      hideOverlay();
     }
   }
 };
+
 window.addEventListener('resize', ()=>{ pairsGrid.style.height=''; pairsGrid.style.width='';});
 </script>
 </body>
